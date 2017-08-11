@@ -2,11 +2,8 @@
 
 //var debug = require('debug')('passport-mongo');
 var app = require('./app');
-
-
-app.set('port', process.env.PORT || 4001);
-
-
-var server = app.listen(4001, function() {
-  console.log('Example app listening on port 4001!');
+var port =  process.env.PORT || 4001;
+app.set('port',port);
+var server = app.listen(port, function() {
+  console.log('App listening on port !'+port);
 });
