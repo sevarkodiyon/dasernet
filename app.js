@@ -66,7 +66,7 @@ var strategy = new LocalStrategy({
 passport.use(strategy);
 
 passport.serializeUser(function (user, next) {
-console.log(user.phonenumber);
+//console.log(user.phonenumber);
   next(null, user.phonenumber);
 });
 
