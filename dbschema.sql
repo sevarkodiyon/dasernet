@@ -64,13 +64,13 @@ create table service_requests (
 	seller_user_id int(11),
 	service_amount float(8,2),
 	status  enum('P','C','I') default 'P',
-	created_on datetime,x`
+	created_on datetime,
 	modified_on datetime
 );
 
 ALTER TABLE service_requests ADD CONSTRAINT seller_service_details_ibfk_2 FOREIGN KEY(service_type_id)  REFERENCES servicetypes(id);
 ALTER TABLE service_requests ADD CONSTRAINT users_ibfk_2 FOREIGN KEY(user_id)  REFERENCES users(id);
-ALTER TABLE service_requests ADD CONSTRAINT users_ibfk_3 FOREIGN KEY(seller_user_id)  REFERENCES users(id);
+
 
 
 create table service_request_params (
@@ -161,16 +161,3 @@ create table notifications (
 	created_on datetime,
 	modified_on datetime
 );
-
-DELIMITER ;;
-CREATE  PROCEDURE `getCustomers`(signertype varchar(20), firstname varchar(20),lastname varchar(20),email_address varchar(100),phone int(11))
-BEGIN
-	
-    Select * from Customers 
-    where (signertype = '' OR signer_type LIKE CONCAT('%', signertype ,'%') )
-    AND (firstname = '' OR first_name LIKE CONCAT('%', firstname ,'%') )
-    AND (lastname = '' OR last_name LIKE CONCAT('%', lastname ,'%') )
-    AND (email_address = '' OR emailaddress LIKE CONCAT('%', email_address ,'%') )
-    AND (phone = 0 OR phonenumber LIKE CONCAT('%', phone ,'%') );
-END;;
-DELIMITER ;
