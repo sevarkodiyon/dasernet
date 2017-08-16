@@ -124,7 +124,7 @@ router.post('/customer/updateMyProfile', authenticate, function (req, res) {
     });
   }
   var data = req.body;
-  if (!_.isUndefined(data.id)) {
+  if (!_.isUndefined(data.userid)) {
     user.updateMyProfile(data).then(function (data) {
       return res.status(200).json({
         status: data
@@ -148,7 +148,7 @@ router.post('/customer/updateProfilePhoto', authenticate, function (req, res) {
     });
   }
   var data = req.body;
-  if (!_.isUndefined(data.id)) {
+  if (!_.isUndefined(data.userid)) {
     user.updateProfilePhoto(data).then(function (data) {
       return res.status(200).json({
         status: data
