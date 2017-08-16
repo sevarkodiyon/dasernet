@@ -280,7 +280,7 @@ router.post('/admin/login', function (req, res, next) {
           err: 'Could not log in user'
         });
       }
-      req.token = jwt.sign({ id: req.user.id, }, 'server secret', { expiresIn: 60 * 60 * 24 });
+      req.token = jwt.sign({ id: req.user.id, }, 'server secret', { expiresIn: 60 * 60 * 1 });
       res.status(200).json({
         data: user,
         token: req.token
