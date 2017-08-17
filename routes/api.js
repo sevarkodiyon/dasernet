@@ -89,7 +89,7 @@ router.get('/customer/everify', function (req, res) {
         });
     }, function (error) {
       return res.status(500).json({
-        status: 'Error. Please contact system administrator.'
+        status: error//'Error. Please contact system administrator.'
       });
     });
   } else { // Incorrect data
