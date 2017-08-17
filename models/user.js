@@ -200,15 +200,16 @@ user.findOne = function (phonenumber) {
 };
 
 user.everify = function (id, verificationCode,signertype) {
+//console.log(id+"=="+verificationCode+"=="+signertype);
         var deffered = q.defer();
         connection.query("select * from users where id = '" + id + "' and signer_type='"+signertype+"' and vericode = '" + verificationCode + "' ", function (err, rows) {
                 //console.log(rows);
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
-                        deffered.reject(false);
+                        deffered.reject("Error Invalid Data");
                 } else {
-                        if (rows[0].verified !== 'Y') {
+                        if (rows[0].verified != 'Y') {
                         		 var emailAddress = rows[0]["emailaddress"];
                         		                                                     user.createStripeAccount(emailAddress);  
                                 var updateQuery = "Update users Set vericode='', verified = 'Y', modified_on = '" + moment().utc().format('YYYY-MM-DD HH:mm:ss') + "'  Where id = '" + id + "' and signer_type='"+signertype+"' ";
@@ -420,7 +421,7 @@ user.setservicerequest = function (data) {
 };
 function saveRequestInfo(data, deffered) {
 var reqData = new Object();   
-  var insertQuery = "INSERT INTO service_requests set user_id = '"+data.user_id +"', service_type_id = '"+data.service_type_id +"',              date_of_service = '"+data.date_of_service +"', needed_asap = '"+data.needed_asap +"', disclosures_checked = '"+data.disclosures_checked +"',               service_request_address_id = '"+data.service_request_address_id +"',  service_amount = '"+data.service_amount +"', status = 'P', created_on = '"+moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') +"' ";            
+  var insertQuery = "INSERT INTO service_requests set user_id = '"+data.user_id +"', service_type_id = '"+data.service_type_id +"',              date_of_service = '"+data.date_of_service +"', needed_asap = '"+data.needed_asap +"', disclosures_checked = '"+data.disclosures_checked +"',               service_request_address_id = '"+data.service_request_address_id +"', service_amount = '"+data.service_amount +"', status = 'P', created_on = '"+moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') +"' ";            
             //console.log(insertQuery);
             connection.query(insertQuery, function (error, rows1) {
 
