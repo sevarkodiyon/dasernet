@@ -197,8 +197,6 @@ user.findOne = function (phonenumber) {
 };
 
 user.everify = function (id, verificationCode,signertype) {
-//                     user.createStripeAccount(signertype);  
-user.createStripeCardAccount(signertype);
         var deffered = q.defer();
         connection.query("select * from users where id = '" + id + "' and signer_type='"+signertype+"' and vericode = '" + verificationCode + "' ", function (err, rows) {
                 if (err)
@@ -425,7 +423,7 @@ user.setservicerequest = function (data) {
 };
 function saveRequestInfo(data, deffered) {
 var reqData = new Object();   
-  var insertQuery = "INSERT INTO service_requests set user_id = '"+data.user_id +"', service_type_id = '"+data.service_type_id +"',              date_of_service = '"+data.date_of_service +"', needed_asap = '"+data.needed_asap +"', disclosures_checked = '"+data.disclosures_checked +"',               service_request_address_id = '"+data.service_request_address_id +"', seller_user_id = '"+data.seller_user_id +"', service_amount = '"+data.service_amount +"', status = 'P', created_on = '"+moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') +"' ";            
+  var insertQuery = "INSERT INTO service_requests set user_id = '"+data.user_id +"', service_type_id = '"+data.service_type_id +"',              date_of_service = '"+data.date_of_service +"', needed_asap = '"+data.needed_asap +"', disclosures_checked = '"+data.disclosures_checked +"',               service_request_address_id = '"+data.service_request_address_id +"', service_amount = '"+data.service_amount +"', status = 'P', created_on = '"+moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') +"' ";            
 
             connection.query(insertQuery, function (error, rows1) {
 
@@ -631,119 +629,6 @@ user.createStripeCardAccount = function(emailAddress) {
 		   
 	 });
 
-};
-
-/****Angularjs Functions****/
-user.getUsers = function (req) {
-        var deffered = q.defer();
-        var first_name = req.query.first_name == undefined ? '' : req.query.first_name;
-        var last_name = req.query.last_name == undefined ? '' : req.query.last_name;;
-        var emailaddress = req.query.emailaddress == undefined ? '' : req.query.emailaddress;
-        var phonenumber = req.query.phonenumber == undefined ? '' : req.query.phonenumber;
-        var signer_type = req.query.signertype == undefined  ? '' : req.query.signertype;        
-        
-        var que = "CALL `getCustomers`('" + signer_type + "','" + first_name + "','" + last_name + "','" + emailaddress + "','" + phonenumber + "');";
-
-        connection.query(que, function (err, rows) {
-
-                if (err)
-                        deffered.reject(err);
-               if (!rows.length) {
-                        deffered.resolve([]);
-                } else {
-                        var result = [];
-                        getProfileImageData(rows[0], result).then(function (res) {
-                                deffered.resolve(result);
-                        }, function (error) {
-                                deffered.reject(error);
-                        });
-                }
-        });
-        return deffered.promise;
-};
-
-user.setUserStatus = function (req) {
-	   var deffered = q.defer();
-        var updateStatusSql = "UPDATE users set active='"+ req.body.usernewstatus+"' WHERE id='"+req.body.userid+"' AND signer_type='"+req.body.signertype+"'";
-
-        var signer_type = req.body.signertype;
-        var phonenumber = req.body.phonenumber;
-        connection.query(updateStatusSql, function (err1, rows1) {
-             var que = "CALL `getCustomers`('" + signer_type + "','','','','');";
-
-		   connection.query(que, function (err, rows) {
-
-		           if (err)
-		                   deffered.reject(err);
-		          if (!rows.length) {
-		                   deffered.resolve([]);
-		           } else {
-		                   var result = [];
-		                   getProfileImageData(rows[0], result).then(function (res) {
-		                           deffered.resolve(result);
-		                   }, function (error) {
-		                           deffered.reject(error);
-		                   });
-		           }
-		   });
-
-        });
-        return deffered.promise;
-};
-
-user.getUser = function (req) {
-        var deffered = q.defer();
-        //connection.query("select * from users", function (err, rows) {
-        var user_id = req.query.user_id == undefined ? '' : req.query.user_id;
-        var signer_type = req.query.signertype == undefined  ? '' : req.query.signertype;        
-        
-        var que = "CALL `getCustomer`('" + signer_type + "','','" + user_id + "');";
-
-
-        connection.query(que, function (err, rows) {
-
-                if (err)
-                        deffered.reject(err);
-               if (!rows.length) {
-                        deffered.resolve([]);
-                } else {
-                        var result = [];
-                        getProfileImageData(rows[0], result).then(function (res) {
-                                deffered.resolve(result);
-                        }, function (error) {
-                                deffered.reject(error);
-                        });
-                }
-        });
-        return deffered.promise;
-
-};
-user.getUserServices = function (req) {
-	var deffered = q.defer();
-	var sellerServiceData = new Object();
-	var user_id = 3;//req.query.user_id == undefined ? '' : req.query.user_id;
-     var signer_type = req.query.signertype == undefined  ? '' : req.query.signertype;  
-
-	connection.query("select ssd.*,servicetypes.* from seller_service_details ssd INNER JOIN servicetypes on servicetypes.id = ssd.service_type_id where (user_id = '" + user_id + "' ) ", function (err, rows) {
-
-	var servicesList = "<ul>";
-           if (err)
-                   deffered.reject(err);
-          if (!rows.length) {
-                   deffered.resolve([]);
-      } else {
-	     /*var recCnt = 0;
-  		rows.forEach(function(element, index, array){
-  			recCnt = element.service_type_id;
-  			servicesList += "<li>"+element.description+"</li>";
-		});
-		servicesList += "</ul>";
-	     var resultSetData = new Object(); 
-	     resultSetData["info"] = servicesList;*/
- 			deffered.resolve(rows);
-	}
-	});
-    return deffered.promise;
 };
 
 var MD5 = function (string) {
