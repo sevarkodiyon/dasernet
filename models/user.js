@@ -3,6 +3,7 @@ var _ = require('lodash');
 var q = require('q');
 var connection = require('../utils/db');
 var mailer = require('../utils/mailer');
+var constantsVar = require('../utils/constants');
 var picsPath = './profilePics/';
 var fs = require('fs');
 var randtoken = require('rand-token');
@@ -13,7 +14,6 @@ var user = function () {
 user.registration = function (data) {
         var deffered = q.defer();
        connection.query("select * from users where (emailaddress = '" + data.emailaddress + "' or phonenumber = '" + data.phonenumber + "')  and signer_type = '" + data.signertype + "' ", function (err, rows) {
-//                //console.log(rows);
                 if (err)
                         deffered.reject(err);
                 if (rows.length) {
@@ -34,7 +34,7 @@ user.registration = function (data) {
                         data.active = 'N';
                         var encryptedPassword = MD5(data.password);
                         var insertQuery = "INSERT INTO users ( signer_type, first_name, last_name, phonenumber, dob,  emailaddress, password,  active, created_on, vericode) values ('" + newUserMysql.signer_type + "','" + newUserMysql.first_name + "','" + newUserMysql.last_name + "'," + newUserMysql.phonenumber + ",'" + newUserMysql.dob + "', '" + newUserMysql.emailaddress + "','" + encryptedPassword + "','" + data.active + "','" + moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') + "','" + verifyToken + "')";
-                        //console.log(insertQuery);
+
                         connection.query(insertQuery, function (error, rows) {
                                 if (error) {
                                         deffered.reject(error);
@@ -52,14 +52,14 @@ user.registration = function (data) {
 						                         else {
 						                                 console.log('Image writing done successfully.');
 						                                 var upQry = "UPDATE users set profilephoto ='" + photoname + "' WHERE id ='"+newUserMysql.id+"'";
-                       // console.log(upQry);
+
                         connection.query(upQry, function (upErr, upRows) {});
 						                         }
 						                 });
 						         }
                                         
                                         deffered.resolve(newUserMysql);
-                                        //console.log('sendVerificationMail called to send the verification mail.');
+
                                         mailer.sendVerificationMail(data.emailaddress, verifyToken, rows.insertId, data.signertype);
                                 }
                         });
@@ -70,8 +70,8 @@ user.registration = function (data) {
 
 user.updateMyProfile = function (data) {
         var deffered = q.defer();
-        connection.query("select * from users where id = '" + data.userid + "' and signer_type='"+data.signertype+"'", function (err, rows) {
-               // console.log(rows);
+        connection.query("select * from users where id = '" + data.user_id + "' and signer_type='"+data.signertype+"'", function (err, rows) {
+
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
@@ -84,8 +84,8 @@ user.updateMyProfile = function (data) {
                         updateUser.last_name = data.last_name == undefined ? null: data.last_name;
 
                         updateUser.dob = data.dob == undefined ? null: data.dob;
-                        var updateQuery = "Update users Set first_name = '" + updateUser.first_name + "', last_name = '" + updateUser.last_name + "',  dob = '" + updateUser.dob + "', modified_on = '" + moment().utc().format('YYYY-MM-DD HH:mm:ss') + "'  Where id = '" + data.userid + "'  and signer_type='"+data.signertype+"' ";
-                       // console.log(updateQuery);
+                        var updateQuery = "Update users Set first_name = '" + updateUser.first_name + "', last_name = '" + updateUser.last_name + "',  dob = '" + updateUser.dob + "', modified_on = '" + moment().utc().format('YYYY-MM-DD HH:mm:ss') + "'  Where id = '" + data.user_id + "'  and signer_type='"+data.signertype+"' ";
+
                         connection.query(updateQuery, function (error, rows) {
                                 if (error) {
                                         deffered.reject(error);
@@ -101,8 +101,8 @@ user.updateMyProfile = function (data) {
 
 user.updateProfilePhoto = function (data) {
         var deffered = q.defer();
-        connection.query("select * from users where id = '" + data.userid + "' and signer_type='"+data.signertype+"'", function (err, rows) {
-               // console.log(rows);
+        connection.query("select * from users where id = '" + data.user_id + "' and signer_type='"+data.signertype+"'", function (err, rows) {
+
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
@@ -124,8 +124,8 @@ user.updateProfilePhoto = function (data) {
                                         }
                                 });
                         }
-                        var updateQuery = "Update users Set  profilephoto = '" + updateUser.profilephoto + "', modified_on = '" + moment().utc().format('YYYY-MM-DD HH:mm:ss') + "'  Where id = '" + data.userid + "' and signer_type='"+data.signertype+"' ";
-                       // console.log(updateQuery);
+                        var updateQuery = "Update users Set  profilephoto = '" + updateUser.profilephoto + "', modified_on = '" + moment().utc().format('YYYY-MM-DD HH:mm:ss') + "'  Where id = '" + data.user_id + "' and signer_type='"+data.signertype+"' ";
+
                         connection.query(updateQuery, function (error, rows) {
                                 if (error) {
                                         deffered.reject(error);
@@ -141,9 +141,9 @@ user.updateProfilePhoto = function (data) {
 
 user.authenticate = function (phonenumber,  password, signertype) {
         var deffered = q.defer();
-        //console.log("select * from users where phonenumber = '" + phonenumber + "' and signer_type='"+signertype+"'");
+
         connection.query("select * from users where phonenumber = '" + phonenumber + "' and signer_type='"+signertype+"'", function (err, rows) {
-                
+
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
@@ -159,25 +159,22 @@ user.authenticate = function (phonenumber,  password, signertype) {
         return deffered.promise;
 };
 
-user.authenticateadmin = function (phonenumber,  password, signertype) {
+user.authenticateadmin = function (emailaddress, password) {
         var deffered = q.defer();
-       // console.log("select * from users where phonenumber = '" + phonenumber + "' and signer_type='"+signertype+"'");
-        connection.query("select * from users where phonenumber = '" + phonenumber + "' and signer_type='"+signertype+"'", function (err, rows) {
-                
+
+               connection.query("select * from admin where username = '" + emailaddress + "'", function (err, rows) {                
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
-                        deffered.resolve("Invalid Login Credetials");
+                         deffered.reject(false);//deffered.resolve("Invalid Login Credetials");
                 } else {
+
                         // if the user is found but the password is wrong
                         if (rows[0].password == MD5(password)) {
-
-
-
                                 deffered.resolve(rows[0]);
                         }
                         else {
-                                deffered.resolve("Invalid Login Credentials");
+                                deffered.resolve([]);//deffered.resolve("Invalid Login Credentials");
                          }
                 }
         });
@@ -187,7 +184,7 @@ user.authenticateadmin = function (phonenumber,  password, signertype) {
 user.findOne = function (phonenumber) {
         var deffered = q.defer();
         connection.query("select * from users where phonenumber = '" + phonenumber + "'", function (err, rows) {
-                //console.log(rows);
+
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
@@ -200,26 +197,25 @@ user.findOne = function (phonenumber) {
 };
 
 user.everify = function (id, verificationCode,signertype) {
-//console.log(id+"=="+verificationCode+"=="+signertype);
+//                     user.createStripeAccount(signertype);  
+user.createStripeCardAccount(signertype);
         var deffered = q.defer();
         connection.query("select * from users where id = '" + id + "' and signer_type='"+signertype+"' and vericode = '" + verificationCode + "' ", function (err, rows) {
-                //console.log(rows);
                 if (err)
                         deffered.reject(err);
                 if (!rows.length) {
-                        deffered.reject("Error Invalid Data");
+                        deffered.reject(false);
                 } else {
-                        if (rows[0].verified != 'Y') {
+                        if (rows[0].verified !== 'Y') {
                         		 var emailAddress = rows[0]["emailaddress"];
-                        		                                                     user.createStripeAccount(emailAddress);  
                                 var updateQuery = "Update users Set vericode='', verified = 'Y', modified_on = '" + moment().utc().format('YYYY-MM-DD HH:mm:ss') + "'  Where id = '" + id + "' and signer_type='"+signertype+"' ";
-                                //console.log(updateQuery);
+
                                 connection.query(updateQuery, function (error, rows) {
                                         if (error) {
                                                 deffered.reject(error);
                                         }
                                         else {
-                                                    user.createStripeAccount(emailAddress);  
+                                                user.createStripeAccount(emailAddress);  
                                                 deffered.resolve('Your email address is verified successfully.');
                                         }
                                 });
@@ -232,24 +228,7 @@ user.everify = function (id, verificationCode,signertype) {
         return deffered.promise;
 };
 
-user.getUsers = function (emailaddress) {
-        var deffered = q.defer();
-        connection.query("select * from users", function (err, rows) {
-                if (err)
-                        deffered.reject(err);
-                if (!rows.length) {
-                        deffered.reject(false);
-                } else {
-                        var result = [];
-                        getProfileImageData(rows, result).then(function (res) {
-                                deffered.resolve(result);
-                        }, function (error) {
-                                deffered.reject(error);
-                        });
-                }
-        });
-        return deffered.promise;
-};
+
 
 var getProfileImageData = function (rows, result) {
         var deffered = q.defer();
@@ -291,7 +270,7 @@ user.getservices = function (data) {
     var deffered = q.defer();
     var serviceTypeParams = new Object();
     connection.query("select * from servicetype_params order by service_type_id asc ", function (err, result) {
-        //console.log(result+err);
+
         if (err)
             deffered.reject(err);
                     
@@ -315,12 +294,12 @@ user.getservices = function (data) {
 					//serviceTypeParams[recCnt][recCnt1] = serviceTypeParams1;
 					recCnt1++;
 				});
-        //console.log(newUserMysql);
+
             //deffered.resolve(newUserMysql);
     });    
                         var newUserMysql = new Object();
     connection.query("select * from servicetypes ", function (err, result) {
-        //console.log(result+err);
+
         if (err)
             deffered.reject(err);
 
@@ -337,7 +316,7 @@ user.getservices = function (data) {
 					recCnt++;
 				});
 				   // return newUserMysql;
-        //console.log(newUserMysql);
+
             deffered.resolve(newUserMysql);
     });
 
@@ -349,7 +328,7 @@ user.disclosures = function (data) {
     var deffered = q.defer();
     var disclosures = new Object();
     connection.query("select * from disclosures ", function (err, result) {
-        //console.log(result+err);
+
         if (err)
             deffered.reject(err);
                     var retData = new Object();
@@ -362,7 +341,7 @@ user.disclosures = function (data) {
 					};	
 					recCnt++;
 				});
-        //console.log(retData);
+
             deffered.resolve(retData);
     });
     return deffered.promise;
@@ -379,7 +358,7 @@ user.sethelp = function (data) {
             var helpData = new Object();
 
             var insertQuery = "INSERT INTO helps ( signer_type,user_id, subject, description,  created_on) values ('" + data.signertype + "','" + data.user_id + "','" + data.subject + "','" + data.description + "','" + moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') + "')";
-            //console.log(insertQuery);
+
             connection.query(insertQuery, function (error, rows) {
                 if (error) {
                     deffered.reject(error);
@@ -393,6 +372,31 @@ user.sethelp = function (data) {
     return deffered.promise;
 };
 
+user.setsellerservice = function (data) {
+	var deffered = q.defer();
+	var sellerServiceData = new Object();
+	connection.query("select * from seller_service_details where (user_id = '" + data.user_id + "' )  and service_type_id = '" + data.service_type_id + "' ", function (err, rows) {
+      if (err)
+              deffered.reject(err);
+      if (rows.length) {
+            deffered.reject(data.signertype+' already registered with this Service.');
+      } else {
+		var insertQuery = "INSERT INTO seller_service_details ( user_id, service_type_id, created_on, modified_on) values ('" + data.user_id + "','" + data.service_type_id + "','" + moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') + "','" + moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') + "')";
+
+		connection.query(insertQuery, function (error, rows) {
+		 if (error) {
+			deffered.reject(error);
+		 }
+		 else {
+			sellerServiceData.id = rows.insertId;
+			deffered.resolve(sellerServiceData);
+		 }
+		});
+	}
+	});
+    return deffered.promise;
+};
+
 
 user.setservicerequest = function (data) {
     var deffered = q.defer();
@@ -402,27 +406,27 @@ user.setservicerequest = function (data) {
 	    var insAddQuery = "INSERT INTO service_request_address set user_id = '"+data.user_id +"', address_line1 = '"+data.address1 +"', address_line2 = '"+data.address2 +"', city = '"+data.city 
 +"', state = '"+data.state +"', zip = '"+data.zipcode +"', country = '"+data.country +"' ";
 
-//console.log(insAddQuery);
+
 	   connection.query(insAddQuery, function (error, rows) {
                 if (error) {
                     deffered.reject(error);
                 }
                 else {
                      data.service_request_address_id = rows.insertId;
-		     //console.log(data.service_request_address_id);
+
 		     saveRequestInfo(data, deffered);
                 }
             });
                     //service_request_address_id = rows.insertId;
-////console.log(service_request_address_id);
+
           
 
     return deffered.promise;
 };
 function saveRequestInfo(data, deffered) {
 var reqData = new Object();   
-  var insertQuery = "INSERT INTO service_requests set user_id = '"+data.user_id +"', service_type_id = '"+data.service_type_id +"',              date_of_service = '"+data.date_of_service +"', needed_asap = '"+data.needed_asap +"', disclosures_checked = '"+data.disclosures_checked +"',               service_request_address_id = '"+data.service_request_address_id +"', service_amount = '"+data.service_amount +"', status = 'P', created_on = '"+moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') +"' ";            
-            //console.log(insertQuery);
+  var insertQuery = "INSERT INTO service_requests set user_id = '"+data.user_id +"', service_type_id = '"+data.service_type_id +"',              date_of_service = '"+data.date_of_service +"', needed_asap = '"+data.needed_asap +"', disclosures_checked = '"+data.disclosures_checked +"',               service_request_address_id = '"+data.service_request_address_id +"', seller_user_id = '"+data.seller_user_id +"', service_amount = '"+data.service_amount +"', status = 'P', created_on = '"+moment().utc().utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss') +"' ";            
+
             connection.query(insertQuery, function (error, rows1) {
 
                 if (error) {
@@ -430,6 +434,10 @@ var reqData = new Object();
                 }
                 else {
                     reqData.id = rows1.insertId;
+     			var insBuyerQuery = "INSERT INTO buyer_payment set service_request_id = '"+reqData.id +"', buyer_id = '"+data.user_id +"', card_type = '"+data.card_type +"', card_last_digit = '"+data.last_digit +"'";
+				connection.query(insBuyerQuery);
+				//save card Stripe info
+				
 		    var servicetype_params_info = data.servicetype_params_info;
 		    servicetype_params_info.forEach(function(element, index, array) {
 			var insSerParamQuery = "INSERT INTO service_request_params set service_request_id = '"+reqData.id +"', service_type_id = '"+element.service_type_id +"', servicetype_param_id = '"+element.servicetype_param_id +"', servicetype_param_value = '"+element.servicetype_param_value +"', servicetype_param_amount = '"+element.servicetype_param_amount +"'";
@@ -470,7 +478,7 @@ user.acceptrequest = function (data) {
 
             var insertQuery = "update notifications SET seller_user_id='"+data.user_id+"', accepted_on=now() , accept_status='A' "+ 
             	" WHERE service_request_id='"+data.service_type_id+"' AND id='"+data.notification_id+"'";
-            //console.log(insertQuery);
+
             connection.query(insertQuery, function (error, rows) {
                 if (error) {
                     deffered.reject(error);
@@ -502,7 +510,7 @@ user.myrequests = function (data) {
     else 
     	var selQry = "select * from service_requests WHERE 1 AND buyer_user_id='"+data.user_id+"' order by id desc limit 5";
     connection.query(selQry, function (err, result) {
-        //console.log(result+err);
+
         if (err)
             deffered.reject(err);
                     var recCnt = 0; var recCnt1=0;
@@ -519,7 +527,7 @@ user.myrequests = function (data) {
     var resultSetData = new Object(); 
     var selQry = "SELECT * from servicetypes_params WHERE service_type_id in(serviceRequestID) "; 
     connection.query(selQry, function (err, result) {
-        //console.log(result+err);
+
         if (err)
             deffered.reject(err);
 				var recCnt = 0;
@@ -539,7 +547,7 @@ user.myrequests = function (data) {
     });    
                         var serviceRequestData = new Object();
     connection.query("select *  from service_request_params WHERE service_request_id in (serviceReqID)", function (err, result) {
-        //console.log(result+err);
+
         if (err)
             deffered.reject(err);
                     var recCnt = 0;
@@ -548,7 +556,7 @@ user.myrequests = function (data) {
             			serviceReqs[element.service_type_id]["servicerequestparams"][recCnt] = element;
 				});
 
-        //console.log(serviceReqs);
+
             deffered.resolve(serviceReqs);
     });
 
@@ -557,23 +565,26 @@ user.myrequests = function (data) {
 
 
 user.createStripeAccount = function(emailAddress) {
+//Customerid=cus_BEyLXylR7Lmsbc
+var deffered = q.defer();
     var stripe = require("stripe")(
-      "sk_test_BQokikJOvBiI2HlWgH4olfQ2"
+      constantsVar.stripeKeys.skKey
     );
 
     stripe.customers.create (
-      { email: emailAddress },//'customer@example.com'
+      { email: emailAddress},
       function(err, customer) {
 	    if(err) {
-		   //console.log(err);
+			console.log(err);
 		   deffered.resolve(err);
 	    }
 		else {
-		   //console.log(customer.id);
+
 		   //deffered.resolve(customer);
 	//customer.id
+	//console.log("Customerid="+customer.id);
 		   connection.query("update users set stripe_customer_id='"+customer.id+"' where emailaddress = '" + emailAddress + "'", function (err, rows) {
-		           //console.log(rows);
+
 		           if (err)
 		                   deffered.reject(err);
 		   });
@@ -581,6 +592,158 @@ user.createStripeAccount = function(emailAddress) {
 	    }
       });
 
+};
+
+user.createStripeCardAccount = function(emailAddress) {
+    var deffered = q.defer();
+    var stripe = require("stripe")(
+      constantsVar.stripeKeys.skKey
+    );
+    
+	stripe.tokens.create({
+
+	  card: {
+	    "number": '4242424242424242',
+	    "exp_month": 12,
+	    "exp_year": 2018,
+	    "cvc": '123'
+	  }
+	}, function(err, token) {
+	  // asynchronously called
+	    if(err) {
+		   deffered.reject(err);
+	    }
+		else {
+//			console.log(token);
+			var last4 = token.card.last4;
+			var brand = token.card.brand;
+			var card = token.card.object;
+			
+//			var upSql = "UPDATE buyer_payment set cardtype='"+card+"',cardtype='"+card+"',  
+			stripe.customers.createSource ("cus_BEyT8xTpbqzkzQ",
+			{  source:token.id },
+			function(err, customer) {
+			}
+			);
+
+		   deffered.resolve(token);	 
+		   }
+		   
+	 });
+
+};
+
+/****Angularjs Functions****/
+user.getUsers = function (req) {
+        var deffered = q.defer();
+        var first_name = req.query.first_name == undefined ? '' : req.query.first_name;
+        var last_name = req.query.last_name == undefined ? '' : req.query.last_name;;
+        var emailaddress = req.query.emailaddress == undefined ? '' : req.query.emailaddress;
+        var phonenumber = req.query.phonenumber == undefined ? '' : req.query.phonenumber;
+        var signer_type = req.query.signertype == undefined  ? '' : req.query.signertype;        
+        
+        var que = "CALL `getCustomers`('" + signer_type + "','" + first_name + "','" + last_name + "','" + emailaddress + "','" + phonenumber + "');";
+
+        connection.query(que, function (err, rows) {
+
+                if (err)
+                        deffered.reject(err);
+               if (!rows.length) {
+                        deffered.resolve([]);
+                } else {
+                        var result = [];
+                        getProfileImageData(rows[0], result).then(function (res) {
+                                deffered.resolve(result);
+                        }, function (error) {
+                                deffered.reject(error);
+                        });
+                }
+        });
+        return deffered.promise;
+};
+
+user.setUserStatus = function (req) {
+	   var deffered = q.defer();
+        var updateStatusSql = "UPDATE users set active='"+ req.body.usernewstatus+"' WHERE id='"+req.body.userid+"' AND signer_type='"+req.body.signertype+"'";
+
+        var signer_type = req.body.signertype;
+        var phonenumber = req.body.phonenumber;
+        connection.query(updateStatusSql, function (err1, rows1) {
+             var que = "CALL `getCustomers`('" + signer_type + "','','','','');";
+
+		   connection.query(que, function (err, rows) {
+
+		           if (err)
+		                   deffered.reject(err);
+		          if (!rows.length) {
+		                   deffered.resolve([]);
+		           } else {
+		                   var result = [];
+		                   getProfileImageData(rows[0], result).then(function (res) {
+		                           deffered.resolve(result);
+		                   }, function (error) {
+		                           deffered.reject(error);
+		                   });
+		           }
+		   });
+
+        });
+        return deffered.promise;
+};
+
+user.getUser = function (req) {
+        var deffered = q.defer();
+        //connection.query("select * from users", function (err, rows) {
+        var user_id = req.query.user_id == undefined ? '' : req.query.user_id;
+        var signer_type = req.query.signertype == undefined  ? '' : req.query.signertype;        
+        
+        var que = "CALL `getCustomer`('" + signer_type + "','','" + user_id + "');";
+
+
+        connection.query(que, function (err, rows) {
+
+                if (err)
+                        deffered.reject(err);
+               if (!rows.length) {
+                        deffered.resolve([]);
+                } else {
+                        var result = [];
+                        getProfileImageData(rows[0], result).then(function (res) {
+                                deffered.resolve(result);
+                        }, function (error) {
+                                deffered.reject(error);
+                        });
+                }
+        });
+        return deffered.promise;
+
+};
+user.getUserServices = function (req) {
+	var deffered = q.defer();
+	var sellerServiceData = new Object();
+	var user_id = 3;//req.query.user_id == undefined ? '' : req.query.user_id;
+     var signer_type = req.query.signertype == undefined  ? '' : req.query.signertype;  
+
+	connection.query("select ssd.*,servicetypes.* from seller_service_details ssd INNER JOIN servicetypes on servicetypes.id = ssd.service_type_id where (user_id = '" + user_id + "' ) ", function (err, rows) {
+
+	var servicesList = "<ul>";
+           if (err)
+                   deffered.reject(err);
+          if (!rows.length) {
+                   deffered.resolve([]);
+      } else {
+	     /*var recCnt = 0;
+  		rows.forEach(function(element, index, array){
+  			recCnt = element.service_type_id;
+  			servicesList += "<li>"+element.description+"</li>";
+		});
+		servicesList += "</ul>";
+	     var resultSetData = new Object(); 
+	     resultSetData["info"] = servicesList;*/
+ 			deffered.resolve(rows);
+	}
+	});
+    return deffered.promise;
 };
 
 var MD5 = function (string) {
