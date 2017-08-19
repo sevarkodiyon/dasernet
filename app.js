@@ -47,14 +47,14 @@ var strategy = new LocalStrategy({
     passwordField: 'password', passReqToCallback: true
 }, function (req, username, password,signertype, next) {
   if (req.url.indexOf('admin') > -1) {
-	  user.authenticate(username, password, signertype).then(function (user,  otherInfo) {
+	  user.authenticateadmin(username, password, signertype).then(function (user) {
 	    next(null, user);
 	  }, function (error) {
 	    next(error);
 	  });
   }
   else {
-    user.authenticate(username, password, signertype).then(function (user, otherinfo) {
+    user.authenticate(username, password, signertype).then(function (user) {
       next(null, user);
     }, function (error) {
       next(error);
@@ -66,8 +66,9 @@ var strategy = new LocalStrategy({
 passport.use(strategy);
 
 passport.serializeUser(function (user, next) {
-//console.log(user.phonenumber);
-  next(null, user.phonenumber);
+	if(user.phonenumber)
+	  next(null, user.phonenumber);
+	else next(null, user.username);
 });
 
 
@@ -80,24 +81,6 @@ passport.deserializeUser(function (phonenumber, next) {
   });
 });
 
-/*passport.use(new LocalStrategy(
-  function(email, password, done) { // callback with email and password from our form
-    connection.query("SELECT * FROM customers where emailaddress = '" + email + "'",function(err,rows){
-        if (err)
-          return done(err);
-        if (!rows.length) {
-          return done(null, false); // req.flash is the way to set flashdata using connect-flash
-        } 
-  
-        // if the user is found but the password is wrong
-        if (!( rows[0].password == password))
-            return done(null, false); // create the loginMessage and save it to session as flashdata
-  
-        // all is well, return successful user
-        return done(null, rows[0]);			
-
-  });
-}));*/
 
 // routes
 app.use(routes);
